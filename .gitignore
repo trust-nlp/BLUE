@@ -1,0 +1,69 @@
+# Python/cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Slurm/runtime logs
+slurm-*.out
+output*.txt
+error*.txt
+*.out
+*.err
+*.log
+
+# Raw/intermediate/final data directories
+step1_output/
+speaker_corrected_txt/
+speaker_merged_turns/
+topic_segments/
+cleaned-final/
+step1234_sample_package_*/
+
+# Data/output archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+
+# Common private data formats
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.txt
+*.xlsx
+*.xls
+*.doc
+*.docx
+*.pdf
+
+# Audio/video inputs
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.mp4
+*.mov
+
+# Model checkpoints and generated model artifacts
+models/
+checkpoints/
+outputs/
+results/
+*.pt
+*.pth
+*.bin
+*.safetensors
