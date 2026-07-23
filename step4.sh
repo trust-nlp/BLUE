@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mi_step4_topics
+#SBATCH --job-name=mi_step4_components
 #SBATCH --partition=bigTiger
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -17,12 +17,12 @@ OPENAI_API_BASE="${OPENAI_API_BASE:-http://localhost:8000/v1}"
 
 cd "$PROJECT_DIR"
 
-echo "=== Step 4: topic segmentation and final cleaned output ==="
+echo "=== Step 4: session-component segmentation and final cleaned output ==="
 python -u step4.py \
   --root_dir "${STEP3_OUT_DIR:-$PROJECT_DIR/speaker_merged_turns}" \
   --session_type "${SESSION_TYPE:-auto}" \
   --out_dir_mode central \
-  --out_dir "${STEP4_FULL_OUT_DIR:-$PROJECT_DIR/topic_segments}" \
+  --out_dir "${STEP4_FULL_OUT_DIR:-$PROJECT_DIR/component_segments}" \
   --clean_out_dir "${FINAL_OUT_DIR:-$PROJECT_DIR/cleaned-final}" \
   --models "$MODEL_PATH" \
   --openai_api_base "$OPENAI_API_BASE"

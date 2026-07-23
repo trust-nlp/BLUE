@@ -26,6 +26,7 @@ step1_output/
 speaker_corrected_txt/
 speaker_merged_turns/
 topic_segments/
+component_segments/
 cleaned-final/
 step1234_sample_package_*/
 
