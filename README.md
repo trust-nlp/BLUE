@@ -52,9 +52,11 @@ API. Recommended model families for this pipeline are:
 - Qwen3.5
 - Gemma 4
 
-Use an instruction-tuned checkpoint that fits the available GPUs. For
-transcript-only processing, Qwen3.5 can be served in language-model-only mode
-to avoid loading unused multimodal components.
+Start with a smaller instruction-tuned checkpoint and evaluate it on a few
+representative sessions. Use a larger checkpoint only if the smaller model does
+not label speaker roles, MI codes, or session-component boundaries reliably.
+For transcript-only processing, Qwen3.5 can be served in language-model-only
+mode to avoid loading unused multimodal components.
 
 Example single-node server:
 
@@ -71,10 +73,6 @@ Then configure the pipeline:
 export MODEL_PATH="/path/to/instruction-model"
 export OPENAI_API_BASE="http://localhost:8000/v1"
 ```
-
-The `qwen-vllm/` directory contains a four-node example with ranks 0-3. Its
-default configuration is four nodes, tensor parallel size 8, and pipeline
-parallel size 4. Adjust those values for the selected model and hardware.
 
 ## Step 1: Transcribe Audio
 
