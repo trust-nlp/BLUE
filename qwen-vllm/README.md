@@ -3,6 +3,38 @@
 This folder contains the Slurm scripts used to start the Qwen vLLM server for
 the pipeline.
 
+## Single node (Qwen3.8-27B)
+
+`qwen_single.sh` serves `Qwen/Qwen3.8-27B` on one node, text only
+(`--language-model-only`). Choose the GPUs at submit time and set `TP_SIZE` to
+the GPU count:
+
+```bash
+export CONDA_SH=/path/to/conda.sh
+export MODEL_PATH=/path/to/Qwen3.8-27B
+sbatch --gres=gpu:h100_80gb:2 qwen_single.sh                 # 2x H100 80GB
+TP_SIZE=4 sbatch --gres=gpu:rtx_6000:4 qwen_single.sh         # 4x RTX 6000
+```
+
+To keep the GPUs allocated to you independently of vLLM (for debugging),
+allocate them with `salloc` and run the script inside the allocation:
+
+```bash
+salloc --no-shell --gres=gpu:h100_80gb:2 --cpus-per-task=16 --mem=128G --time=3-00:00:00
+srun --jobid=<jobid> --gpus=2 --cpus-per-task=16 bash qwen-vllm/qwen_single.sh   # in tmux
+srun --jobid=<jobid> --overlap --pty bash      # extra debug shell next to vLLM
+scancel <jobid>                                # release the GPUs
+```
+
+Do not start vLLM with `--overlap`: on this cluster (Slurm 24.05) an
+`--overlap` step only sees one of the allocated GPUs, so TP=2 fails.
+
+The log prints the `OPENAI_API_BASE` to use for Steps 2-4.
+`REASONING_PARSER` (default `qwen3`) moves thinking text out of the answer so
+the pipeline's JSON parsing is not affected; set it to `""` to disable.
+
+## Multi node (Qwen3-235B)
+
 The setup uses four nodes:
 
 ```text

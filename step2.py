@@ -35,6 +35,10 @@ ROLE_LABELS = {
     "patient": "patient",
 }
 VALID_ROLES = set(ROLE_LABELS)
+# Qwen3.8: thinking off for this simple, high-volume step. Sampling follows
+# Qwen's non-thinking recommendation, except presence_penalty stays 0 because
+# the JSON output repeats the same keys for every utterance.
+EXTRA_BODY = {"top_k": 20, "chat_template_kwargs": {"enable_thinking": False}}
 OLD_SPEAKER_RE = re.compile(r"^\s*(?:\[[^\]]+\]\s*)+")
 THERAPIST_CUE_RE = re.compile(
     r"\b("
@@ -166,6 +170,7 @@ def call_llm(
     batch: List[Dict[str, object]],
     max_tokens: int,
     temperature: float,
+    top_p: float,
     timeout: float,
 ) -> Tuple[Optional[Dict], str, float]:
     prompt = USER_PROMPT_TEMPLATE.format(
@@ -180,8 +185,10 @@ def call_llm(
             {"role": "user", "content": prompt},
         ],
         temperature=temperature,
+        top_p=top_p,
         max_tokens=max_tokens,
         timeout=timeout,
+        extra_body=EXTRA_BODY,
     )
     latency = round(time.time() - t0, 3)
     raw = response.choices[0].message.content or ""
@@ -317,7 +324,8 @@ def parse_args():
     parser.add_argument("--api_key", default="token-abc123")
     parser.add_argument("--batch_size", type=int, default=BATCH_SIZE_DEFAULT)
     parser.add_argument("--max_tokens", type=int, default=3000)
-    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument("--top_p", type=float, default=0.8)
     parser.add_argument("--timeout", type=float, default=1200.0)
     parser.add_argument("--skip_existing", action="store_true")
     parser.add_argument("--include", nargs="+", default=None)
@@ -393,6 +401,7 @@ def main():
                     batch=batch,
                     max_tokens=args.max_tokens,
                     temperature=args.temperature,
+                    top_p=args.top_p,
                     timeout=args.timeout,
                 )
                 parsed_ok = parsed is not None

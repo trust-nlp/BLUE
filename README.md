@@ -29,7 +29,7 @@ segment_id, role, behavior, motivation, time, text, session_component
 ```
 
 - `role`: `therapist` or `patient`
-- `behavior`: `th`, `tb`, `alt`, `oth`, or `nr`
+- `behavior`: `th`, `TB`, `ALT`, `OTH`, `nr`, or `NC` (no code)
 - `motivation`: `-` (avoid), `=` (neutral), or `+` (approach)
 - `time`: `P` (past), `C` (current), or `F` (future)
 - `session_component`: a predefined BMI/BAI or SFAS intervention component
@@ -130,10 +130,31 @@ sbatch step2.sh
 Purpose: code patient speech using the MI Quick Key and create analytically
 consistent segments.
 
-- Consecutive therapist speech is merged.
+- Therapist speech is never merged; each therapist transcript line stays its
+  own segment.
+- Patient speech is coded with the surrounding conversation (therapist and
+  patient lines) as read-only context; `CONTEXT_UTTS` (default 10) sets how
+  many preceding lines are included before each batch.
 - Patient speech is split whenever behavior, motivation, or time changes.
+- The coding prompt follows the MISC-BE manual (`MIBE manual.docx`): its
+  behavior/motivation/time definitions, decision rules, and examples.
+- There is no keyword fallback. Utterances with a missing or invalid model
+  code are retried (`MAX_RETRIES`, default 2); if still invalid they are coded
+  `NC` with `evidence` starting `model_failed:`.
 - Only patient segments coded `tb`, `alt`, or `oth` receive motivation and time
   ratings.
+- The first pass codes batches of `BATCH_SIZE` client units (thinking off,
+  temperature 0) and also shows `AFTER_UTTS` (default 3) following lines as
+  read-only context. The prompt adds rules for deciding motivation from
+  context and for client units that are often wrongly coded `nr`.
+- Motivation second pass: every unit coded TB/ALT/OTH is judged again on its
+  own, only for motivation, with `MOT_BEFORE` (15) lines before and
+  `MOT_AFTER` (5) lines after it, thinking on, temperature 0.6. This is done
+  `MOT_PASSES` (default 3) times and majority-voted; a tie gives `=`, and a
+  unit with no valid answer keeps its first-pass motivation. Behavior and time
+  are not changed. The votes are saved next to the output as
+  `<session_id>.motivation_votes.json`. Set `MOT_PASSES=0` to skip this pass.
+  It takes most of Step 3's time (about 30 minutes per session on one server).
 
 Input:
 
@@ -150,13 +171,13 @@ speaker_merged_turns/<session_id>/<session_id>.coded_segments.csv
 Run:
 
 ```bash
-export SEGMENTATION_UNIT="punctuation"
 sbatch step3.sh
 ```
 
-`SEGMENTATION_UNIT=none` labels the existing units directly.
-`SEGMENTATION_UNIT=punctuation` splits by sentence-ending punctuation, labels
-the pieces, and merges adjacent pieces with identical codes.
+`SEGMENTATION_UNIT=punctuation` (default) splits patient lines by sentence-ending
+punctuation, labels the pieces, and merges adjacent pieces with identical codes.
+Therapist lines are not split.
+`SEGMENTATION_UNIT=none` labels the existing transcript lines directly.
 
 ## Step 4: Assign Session Components
 
@@ -188,6 +209,13 @@ Run:
 ```bash
 sbatch step4.sh
 ```
+
+- Each segment is sent to the model as `<segment_id>: [therapist|patient] <text>`.
+- The prompts tell the model that a recording may start mid-session or end
+  early. Segments before the first detected component (or all segments, if the
+  model output cannot be parsed) get `session_component = Unknown`.
+- The model's full response (reasoning and JSON) is saved next to the final
+  CSV as `<session_id>.step4_raw.json`.
 
 The optional `--write_full_output` flag also writes debugging metadata under
 `component_segments/`. It is not needed for the normal final output.
