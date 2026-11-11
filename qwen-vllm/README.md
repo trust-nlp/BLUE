@@ -12,6 +12,8 @@ the GPU count:
 ```bash
 export CONDA_SH=/path/to/conda.sh
 export MODEL_PATH=/path/to/Qwen3.8-27B
+export CUDA_HOME=/path/to/cuda-12.8     # only if nvcc is not on PATH (needed by flashinfer)
+export HOST_CXX=/path/to/g++           # only if the system g++ cannot compile CUDA code
 sbatch --gres=gpu:h100_80gb:2 qwen_single.sh                 # 2x H100 80GB
 TP_SIZE=4 sbatch --gres=gpu:rtx_6000:4 qwen_single.sh         # 4x RTX 6000
 ```
